@@ -1,47 +1,68 @@
 #pragma once
+
 #include <iostream>
-#include <sstream>
-#include <iomanip>
 
 using namespace std;
 
 class Datum
 {
 public:
+
 	Datum();
-	Datum(int, int, int);
+	Datum(const int, const int, const int);
 
-	void setTag(int);
-	void setMonat(int);
-	void setJahr(int);
+	bool setDatum(const int, const int, const int);
 
-	void setDatum(int, int, int);
-
+	bool setTag(const int);
 	int getTag() const;
+	bool setMonat(const int);
 	int getMonat() const;
+	bool setJahr(const int);
 	int getJahr() const;
 
-	string toShortString();
-	string toLongString();
+	string toString() const;
+	string toLongString() const;
+
+	bool addiereJahre(const int);
+	bool addiereMonate(const int);
+	bool addiereTage(int);
+
+	static bool istSchaltjahr(const int);
+
+	bool operator==(const Datum&) const;
+	bool operator!=(const Datum&) const;
+	bool operator<(const Datum&) const;
+	bool operator>(const Datum&) const;
+	bool operator>=(const Datum&) const;
+	bool operator<=(const Datum&) const;
+
+	Datum operator+(const int) const;
+	Datum operator-(const int) const;
+
+	Datum& operator+=(const int);
+	Datum& operator-=(const int);
+
+	Datum& operator++();
+	Datum operator++(int);
+	
+	Datum& operator--();
+	Datum operator--(int);
 
 private:
+
 	int tag, monat, jahr;
 
-	static const int DEFAULT_TAG;
-	static const int DEFAULT_MONAT;
-	static const int DEFAULT_JAHR;
+	static const int DEFAULT_TAG, DEFAULT_MONAT, DEFAULT_JAHR;
 
-	static const string MONAT_NAME[];
-	static const int MONAT_TAGE[];
+	static const int maxMonatstage[];
+	static const string arrMonatsname[];
 
-	bool checkTag(int, int, int);
-	bool checkMonat(int);
-	bool checkJahr(int);
+	bool checkDatum(const int, const int, const int) const;
+	bool checkJahr(const int) const;
+	bool checkMonat(const int) const;
+	bool checkTag(const int, const int, const int) const;
 
-	int getNumberDaysOfMonth(int, int);
+	int getMaxMonatstage(const int, const int) const;
 
-	bool isLeapYear(int);
-
-	string numberToString(int);
 };
 

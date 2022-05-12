@@ -1,17 +1,15 @@
 #include "Datum.h"
 
 const int Datum::DEFAULT_TAG = 1;
-
 const int Datum::DEFAULT_MONAT = 1;
-
 const int Datum::DEFAULT_JAHR = 2000;
 
-const string Datum::MONAT_NAME[]{ 
-	" Januar "," Februar "," März "," April "," Mai "," Juni "," Juli ",
-	" August "," September "," Oktober "," November "," Dezember "
-};
+const int Datum::maxMonatstage[]{ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-const int Datum::MONAT_TAGE[]{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+const string Datum::arrMonatsname[]{
+	"", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
+	"Juli", "August", "September", "Oktober", "November", "Dezember"
+};
 
 Datum::Datum()
 {
@@ -20,45 +18,30 @@ Datum::Datum()
 	jahr = DEFAULT_JAHR;
 }
 
-Datum::Datum(int tag, int monat, int jahr) : Datum()
+Datum::Datum(const int tag, const int monat, const int jahr) : Datum()
 {
 	setDatum(tag, monat, jahr);
 }
 
-void Datum::setTag(int tag)
+bool Datum::setDatum(const int tag, const int monat, const int jahr)
 {
-	if(checkTag(tag, monat, jahr))
-		this->tag = tag;
-	else
-		cerr << "Sie haben einen falschen Wert für den Tag eingegeben!" << endl;
-}
+	bool retValue = false;
 
-void Datum::setMonat(int monat)
-{
-	if (checkMonat(monat) && checkTag(tag, monat, jahr))
-		this->monat = monat;
-	else
-		cerr << "Sie haben den falschen Wert für den Monat eingegeben!" << endl;
-}
-
-void Datum::setJahr(int jahr)
-{
-	if(checkJahr(jahr) && checkTag(tag, monat, jahr))
-		this->jahr = jahr;
-	else
-		cerr << "Sie haben einen falschen Wert für das Jahr eingegeben!" << endl;
-}
-
-void Datum::setDatum(int tag, int monat, int jahr)
-{
-	if (checkJahr(jahr) && checkMonat(monat) && checkTag(tag, monat, jahr))
+	if (checkDatum(tag, monat, jahr))
 	{
-		this->jahr = jahr;
-		this->monat = monat;
 		this->tag = tag;
+		this->monat = monat;
+		this->jahr = jahr;
+
+		retValue = true;
 	}
-	else
-		cerr << "Sie haben ein nicht vorhandenes Datum eingegeben!" << endl;
+
+	return retValue;
+}
+
+bool Datum::setTag(const int value)
+{
+	return setDatum(value, monat, jahr);
 }
 
 int Datum::getTag() const
@@ -66,9 +49,19 @@ int Datum::getTag() const
 	return tag;
 }
 
+bool Datum::setMonat(const int value)
+{
+	return setDatum(tag, value, jahr);
+}
+
 int Datum::getMonat() const
 {
 	return monat;
+}
+
+bool Datum::setJahr(const int value)
+{
+	return setDatum(tag, monat, value);
 }
 
 int Datum::getJahr() const
@@ -76,51 +69,303 @@ int Datum::getJahr() const
 	return jahr;
 }
 
-string Datum::toShortString()
+string Datum::toString() const
 {
-	return numberToString(tag) + numberToString(monat) + to_string(jahr);
+	char buffer[16];
+
+	sprintf_s(buffer, "%02d.%02d.%d", tag, monat, jahr);
+
+	return static_cast<string>(buffer);
 }
 
-string Datum::toLongString()
+string Datum::toLongString() const
 {
-	return numberToString(tag) + MONAT_NAME[monat - 1] + to_string(jahr);
+	char buffer[32];
+
+	sprintf_s(buffer, "%02d. %s %d", tag, arrMonatsname[monat].c_str(), jahr);
+
+	return static_cast<string>(buffer);
 }
 
-bool Datum::checkTag(int tag, int monat, int jahr)
+bool Datum::addiereJahre(const int anzahl)
 {
-	return tag > 0 && tag <= getNumberDaysOfMonth(monat, jahr);
-}
+	bool retValue = false;
 
-bool Datum::checkMonat(int monat)
-{
-	return monat > 0 && monat < 13;
-}
+	if (checkJahr(jahr + anzahl))
+	{
+		jahr += anzahl;
 
-bool Datum::checkJahr(int jahr)
-{
-	return jahr > 1582 && jahr < 10000;
-}
-
-int Datum::getNumberDaysOfMonth(int monat, int jahr)
-{
-	int retValue = MONAT_TAGE[monat - 1];
-
-	if (monat == 2 && isLeapYear(jahr))
-		retValue = 29;
+		if (!checkDatum(tag, monat, jahr))
+			retValue = setDatum(getMaxMonatstage(monat, jahr), monat, jahr);
+	}
 
 	return retValue;
 }
 
-bool Datum::isLeapYear(int jahr)
+bool Datum::addiereMonate(const int anzahl)
 {
-	return (jahr % 4 == 0 && jahr % 100 != 0) || (jahr % 400 == 0);
+	bool retValue = true;
+
+	int aktTag = tag;
+	int aktMonat = monat;
+	int aktJahr = jahr;
+
+	int anzahlJahre = anzahl / 12;
+	int anzahlMonate = anzahl % 12;
+
+	if (!checkJahr(jahr + anzahlJahre))
+	{
+		return false;
+	}
+
+	jahr += anzahlJahre;
+
+	monat += anzahlMonate;
+
+	if (monat > 12)
+	{
+		jahr++;
+		monat = monat % 12;
+	}
+
+	else if (monat < 1)
+	{
+		jahr--;
+		monat = 12 + monat;
+	}
+
+	if (!checkJahr(jahr))
+	{
+		setDatum(aktTag, aktMonat, aktJahr);
+		retValue = false;
+	}
+
+	else if (!checkDatum(tag, monat, jahr))
+	{
+		retValue = setDatum(getMaxMonatstage(monat, jahr), monat, jahr);
+	}
+
+	return retValue;
 }
 
-string Datum::numberToString(int number)
+bool Datum::addiereTage(int anzahl)
 {
-	stringstream ss;
+	bool retValue = true;
 
-	ss << setw(2) << setfill('0') << number << '.';
+	int aktTag = tag;
+	int aktMonat = monat;
+	int aktJahr = jahr;
 
-	return ss.str();
+	while (anzahl > 0)
+	{
+		if (tag + anzahl > getMaxMonatstage(monat, jahr))
+		{
+			anzahl -= (getMaxMonatstage(monat, jahr) - tag) + 1;
+
+			monat++;
+			if (monat > 12)
+			{
+				jahr++;
+				monat = 1;
+			}
+
+			tag = 1;
+		}
+		else
+		{
+			tag += anzahl;
+
+			anzahl = 0;
+		}
+	}
+
+	while (anzahl < 0)
+	{
+		if (tag + anzahl < 1)
+		{
+			anzahl += tag;
+
+			monat--;
+
+			if (monat < 1)
+			{
+				monat = 12;
+				jahr--;
+			}
+
+			tag = getMaxMonatstage(monat, jahr);
+		}
+		else
+		{
+			tag += anzahl;
+
+			anzahl = 0;
+		}
+	}
+
+	if (!checkDatum(tag, monat, jahr))
+	{
+		retValue = setDatum(aktTag, aktMonat, aktJahr);
+		retValue = false;
+	}
+
+	return retValue;
+}
+
+bool Datum::istSchaltjahr(const int jahr)
+{
+	bool retValue = false;
+
+	if ((jahr % 4 == 0 && jahr % 100 != 0) || (jahr % 400 == 0))
+		retValue = true;
+
+	return retValue;
+}
+
+bool Datum::checkDatum(const int tag, const int monat, const int jahr) const
+{
+	return (checkJahr(jahr) && checkMonat(monat) && checkTag(tag, monat, jahr));
+}
+
+bool Datum::checkJahr(const int jahr) const
+{
+	return (jahr > 1582);
+}
+
+bool Datum::checkMonat(const int monat) const
+{
+	return (monat >= 1 && monat <= 12);
+}
+
+bool Datum::checkTag(const int tag, const int monat, const int jahr) const
+{
+	return (tag >= 1 && tag <= getMaxMonatstage(monat, jahr));
+}
+
+int Datum::getMaxMonatstage(const int monat, const int jahr) const
+{
+	int retValue = maxMonatstage[monat];
+
+	if (monat == 2)
+		retValue += (istSchaltjahr(jahr)) ? 1 : 0;
+
+	return retValue;
+}
+
+bool Datum::operator==(const Datum& that) const
+{
+	return jahr == that.getJahr() && monat == that.getMonat() && tag == that.getTag();
+}
+
+bool Datum::operator!=(const Datum& that) const
+{
+	return jahr != that.getJahr() || monat != that.getMonat() || tag != that.getTag();
+}
+
+bool Datum::operator<(const Datum& that) const
+{
+	if (jahr < that.getJahr())
+		return true;
+
+	if (jahr == that.getJahr())
+	{
+		if (monat < that.getMonat())
+			return true;
+
+		if (monat == that.getMonat() && tag < that.getTag())
+			return true;
+	}
+
+	return  false;
+}
+
+bool Datum::operator>(const Datum& that) const
+{
+	if (jahr > that.getJahr())
+		return true;
+
+	if (jahr == that.getJahr())
+	{
+		if (monat > that.getMonat())
+			return true;
+
+		if (monat == that.getMonat() && tag > that.getTag())
+			return true;
+	}
+
+	return false;
+}
+
+bool Datum::operator>=(const Datum& that) const
+{
+	return !(*this < that);
+}
+
+bool Datum::operator<=(const Datum& that) const
+{
+	return !(*this > that);
+}
+
+Datum Datum::operator+(const int value) const
+{
+	Datum retValue = *this;
+
+	retValue.addiereTage(value);
+
+	return retValue;
+}
+
+Datum Datum::operator-(const int value) const
+{
+	Datum retValue = *this;
+
+	retValue.addiereTage(-value);
+
+	return retValue;
+}
+
+Datum& Datum::operator+=(const int value)
+{
+	addiereTage(value);
+
+	return *this;
+}
+
+Datum& Datum::operator-=(const int value)
+{
+	addiereTage(-value);
+
+	return *this;
+}
+
+Datum& Datum::operator++()
+{
+	addiereTage(1);
+
+	return *this;
+}
+
+Datum Datum::operator++(int)
+{
+	Datum temp = *this;
+
+	addiereTage(1);
+
+	return temp;
+}
+
+Datum& Datum::operator--()
+{
+	addiereTage(-1);
+
+	return *this;
+}
+
+Datum Datum::operator--(int)
+{
+	Datum temp = *this;
+
+	addiereTage(-1);
+
+	return temp;
 }
